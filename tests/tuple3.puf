@@ -1,0 +1,4 @@
+
+first t = let (x,y)=t; in x;
+
+main = first (1,3);

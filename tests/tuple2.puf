@@ -1,0 +1,4 @@
+
+getX c = # 0 c;
+
+main = if (getX (2,4))==2 then 6 else 7;
