@@ -32,8 +32,12 @@ mainargs x = do { input <- prepare x (takeDirectory x)
                 ; let ast = parsePuf input
                 ; putStrLn (ppAST ast)
                 ; putStrLn ""
+                ; putStrLn (show ast)
+                ; putStrLn ""
                 ; putStrLn "Compiling..."
-                ; putStrLn (compileAST ast)
+                ; let compiled = compileAST ast
+                ; writeFile (replaceExtension x "cbn") compiled
+                ; putStrLn "Done"
                 }
 
 selfparse :: String -> IO Bool
@@ -44,7 +48,7 @@ selfparse x = do { input <- prepare x (takeDirectory x)
                  ; pprinted <- return (ppAST (parsePuf input))
                  ; putStrLn pprinted
                  ; return (pprinted == ppAST (parsePuf pprinted))
-                 } --where pprinted = ppAST $ parsePuf input
+                 }
 
 prepare :: String -> String -> IO String
 prepare x path = do { sample <- readFile x

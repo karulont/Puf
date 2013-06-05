@@ -1,6 +1,8 @@
 module PufCompilerTypes where
 
 import PufAST
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 data Instruction
      = Mkbasic
@@ -48,8 +50,28 @@ data Instruction
      | Cat Instruction Instruction
      deriving (Show)
 
-type InstList = Instruction
+data VariableType = Local
+                  | Global
+                  deriving (Show)
 
+type InstList = Instruction
+type Environment = Map.Map String (VariableType,Int)
+
+initialEnvironment = Map.empty :: Environment
+
+envSingle :: String -> (VariableType,Int) -> Environment
+envSingle k a = Map.singleton k a
+
+envAdd :: Environment -> (String,(VariableType,Int)) -> Environment
+envAdd e (name,v) = Map.insert name v e
+
+envGet :: String -> Environment -> (VariableType,Int)
+envGet name e = case Map.lookup name e of
+                  Just r -> r
+                  Nothing -> error ("Unknown variable " ++ name)
+                  
+envUnion :: Environment -> Environment -> Environment
+envUnion = Map.union
 
 data CompilerState = CompilerState [(Char,Int)] Int Int
                      deriving (Show)
@@ -63,13 +85,69 @@ infixr 6 <>
 
 (<>) :: InstList -> InstList -> InstList
 x <> y = Cat x y
-                                    
+
+free :: AST String -> [String]
+free ast = Set.elems $ free' Set.empty ast
+type Variables = Set.Set String
+
+free' :: Variables -> AST String -> Variables
+free' bound (Var name) = if Set.member name bound then Set.empty 
+                                                  else Set.singleton name
+free' _ (Num _) = Set.empty
+free' _ (Prim _) = Set.empty
+free' b (Cond c e0 e1) = free' b c `Set.union` free' b e0 
+                                   `Set.union` free' b e1
+free' b (Fun name e) = free' (Set.insert name b) e
+free' b (App e0 e1) = free' b e0 `Set.union` free' b e1
+--free' b (Let decls e) = 
+
+
+
 printInstruction :: Instruction -> String
 printInstruction x = case x of
                        Mkbasic -> "mkbasic"
                        Getbasic -> "getbasic"
-                       Label i -> "\t_" ++ show i
-                       _ -> ""
+                       Eval -> "eval"
+                       Add -> "add"
+                       Sub -> "sub"
+                       Mul -> "mul"
+                       Div -> "div"
+                       Leq -> "leq"
+                       Eq -> "eq"
+                       Apply -> "apply"
+                       Update -> "update"
+                       Halt -> "halt"
+                       Neg -> "neg"
+                       Not -> "not"
+                       Mod -> "mod"
+                       Neq -> "neq"
+                       Le -> "le"
+                       Geq -> "geq"
+                       Gr -> "gr"
+                       Or -> "or"
+                       And -> "and"
+                       PufCompilerTypes.Nil -> "nil"
+                       PufCompilerTypes.Cons -> "cons"
+                       Loadc i -> "loadc " ++ show i
+                       Pushloc i -> "pushloc " ++ show i
+                       Pushglob i -> "pushglob " ++ show i
+                       Targ i -> "targ " ++ show i
+                       Return i -> "return " ++ show i
+                       Slide i -> "slide " ++ show i
+                       Alloc i -> "alloc " ++ show i
+                       Rewrite i -> "rewrite " ++ show i
+                       Mkvec i -> "mkvec " ++ show i
+                       Getvec i -> "getvec " ++ show i
+                       Get i -> "get " ++ show i
+                       Mkclos i -> "mkclos _" ++ show i
+                       Mkfunval i -> "mkfunval _" ++ show i
+                       Mark i -> "mark _" ++ show i
+                       Jumpz i -> "jumpz _" ++ show i
+                       Jump i -> "jump _" ++ show i
+                       Tlist i -> "tlist " ++ show i
+                       Move i1 i2 -> "move " ++ show i1 ++ " " ++ show i2
+                       Label i -> "\t_" ++ show i ++ ":"
+                       _ -> error "pInst"
 
 builtinInst :: Builtin -> Instruction
 builtinInst UNeg = Neg
