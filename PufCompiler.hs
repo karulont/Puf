@@ -150,6 +150,26 @@ codeV (Select j e) p sd
     = do ex <- codeV e p sd
          return $ ex <> Get j <> Eval
 
+codeV (PufAST.Nil) _ _ = return PufCompilerTypes.Nil
+
+codeV (PufAST.Cons e1 e2) p sd
+    = do ex1 <- codeC e1 p sd
+         ex2 <- codeC e2 p (sd+1)
+         return $ ex1 <> ex2 <> PufCompilerTypes.Cons
+
+codeV (Case e0 e1 h t e2) p sd
+    = do let p' = envUnion p (envSingle h (Local,sd+1)) `envUnion` 
+                            envSingle t (Local,sd+2)
+         ex0 <- codeV e0 p sd
+         la <- getNextLabel
+         ex1 <- codeV e1 p sd
+         lb <- getNextLabel
+         ex2 <- codeV e2 p' (sd+2)
+         return $ ex0 <> Tlist la <> ex1 <> Jump lb <> Label la
+                      <> ex2 <> Slide 2 <> Label lb
+
+
+
 codeC e p sd = do let z = free(e)
                       g = length z
                       iRange = [0..(g-1)]

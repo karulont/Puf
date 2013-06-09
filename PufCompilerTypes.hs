@@ -119,6 +119,10 @@ free' bound (Let decls e)
 
 free' b (Tuple exprs) = foldl (\s e -> Set.union s (free' b e)) Set.empty exprs
 free' b (Select _ e) = free' b e
+free' _ (PufAST.Nil) = Set.empty
+free' b (PufAST.Cons e0 e1) = free' b e0 `Set.union` free' b e1
+free' b (Case e0 e1 h t e2) = free' b e0 `Set.union` free' b e1 `Set.union`
+                                free' (foldr Set.insert b [h,t])  e2
       
 
 printInstruction :: Instruction -> String
@@ -162,7 +166,7 @@ printInstruction x = case x of
                        Mark i -> "mark _" ++ show i
                        Jumpz i -> "jumpz _" ++ show i
                        Jump i -> "jump _" ++ show i
-                       Tlist i -> "tlist " ++ show i
+                       Tlist i -> "tlist _" ++ show i
                        Move i1 i2 -> "move " ++ show i1 ++ " " ++ show i2
                        Label i -> "\t_" ++ show i ++ ":"
                        _ -> error "pInst"
