@@ -102,13 +102,23 @@ codeV ap@(App _ _) p sd
                  apps (App e1 e2) = e1:e2:[]
                  apps _ = []
 
+codeV (Let [Tdecl ys e1] e0) p sd
+    = do let k = length ys
+             p' = foldl envAdd p (
+                            zipWith (\y i -> (y,(Local,sd+i))) ys 
+                            [0..(k-1)])
+         ex1 <- codeV e1 p sd
+         ex0 <- codeV e0 p' (sd+k-1)
+         return $ ex1 <> Getvec k <> ex0 <> Slide k
+
+
 codeV (Let ldecls e0) p sd
     = do let n = length ldecls
              ps = scanl envUnion p (zipWith
                     (\l j -> case l of 
                                Sdecl n _ -> envSingle n (Local,sd+j) 
                                Tdecl ns _ -> undefined
-                    ) ldecls [0..(n)])
+                    ) ldecls [1..(n)])
          exps <- zipWithM 
                  (\d (env,i) -> case d of
                              Sdecl _ e -> codeC e env (sd+i)
@@ -129,6 +139,16 @@ codeV (Rec rdecls e0) p sd
             foldl Cat (Alloc n) 
                 (zipWith (\e i -> e <> Rewrite i) exps [n,(n-1)..1])
             <> exp0 <> Slide n
+
+codeV (Tuple es) p sd
+    = do let k = length es
+             exprs = zipWithM (\e i -> codeC e p (sd+i)) es [0..k]
+         exs <- exprs
+         return $ foldl1 Cat exs <> Mkvec k
+
+codeV (Select j e) p sd
+    = do ex <- codeV e p sd
+         return $ ex <> Get j <> Eval
 
 codeC e p sd = do let z = free(e)
                       g = length z

@@ -71,7 +71,11 @@ envGet name e = case Map.lookup name e of
                   Nothing -> error ("Unknown variable " ++ name)
                   
 envUnion :: Environment -> Environment -> Environment
-envUnion = Map.union
+{- Map.union prefers elements from the left map, 
+ - but when using envUnion we want to prefer 
+ - elements from right map because that is more local scope.
+ -} 
+envUnion m1 m2 = Map.unionWith (\_ b -> b) m1 m2
 
 data CompilerState = CompilerState [(Char,Int)] Int Int
                      deriving (Show)
@@ -99,9 +103,23 @@ free' b (Cond c e0 e1) = free' b c `Set.union` free' b e0
                                    `Set.union` free' b e1
 free' b (Fun name e) = free' (Set.insert name b) e
 free' b (App e0 e1) = free' b e0 `Set.union` free' b e1
---free' b (Let decls e) = 
+free' bound (Let decls e)
+    = let bounds = scanl Set.union bound (
+                     map (\l -> case l of
+                                  Sdecl n _ -> Set.singleton n
+                                  Tdecl ns _ -> foldl (\s e -> Set.insert e s) 
+                                                    Set.empty ns
+                         ) decls
+                    )
+      in foldl1 Set.union 
+           (zipWith (\l b -> case l of
+                               Sdecl _ e -> free' b e
+                               Tdecl _ e -> free' b e
+                    ) decls bounds)
 
-
+free' b (Tuple exprs) = foldl (\s e -> Set.union s (free' b e)) Set.empty exprs
+free' b (Select _ e) = free' b e
+      
 
 printInstruction :: Instruction -> String
 printInstruction x = case x of
