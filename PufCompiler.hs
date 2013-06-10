@@ -187,7 +187,8 @@ codeV (Case e0 e1 h t e2) p sd
                       <> ex2 <> Slide 2 <> Label lb
 
 
-
+codeC (b@(Num _)) p sd = codeV b p sd
+codeC (fn@(Fun _ _)) p sd = codeV fn p sd
 codeC e p sd = do let z = free(e)
                       g = length z
                       iRange = [0..(g-1)]
