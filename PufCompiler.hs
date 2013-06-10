@@ -5,12 +5,30 @@ import PufCompilerTypes
 import Control.Monad.State
 
 compileAST :: AST String -> String
-compileAST ast  = pprint (codegen ast)
+compileAST ast  = pprint.elimSpaghetti.instListToList $ codegen ast
 
+instListToList :: InstList -> [InstList]
+instListToList (Cat il1 il2) = instListToList il1 ++ instListToList il2
+instListToList i = [i]
+
+pprint :: [InstList] -> String
+pprint = unlines.map printInstruction
+
+{-
 pprint :: InstList -> String
 pprint (Cat il1 il2) = pprint il1 ++ ('\n' : pprint il2)
 pprint i = printInstruction i
+-}
 
+elimSpaghetti :: [InstList] -> [InstList]
+elimSpaghetti (Mkclos a:Jump b:rest)
+    = let (body,(_:end)) = break (== Label b) rest
+      in Mkclos a : elimSpaghetti (end ++ body)
+elimSpaghetti (Mkfunval a:Jump b:rest)
+    = let (body,(_:end)) = break (== Label b) rest
+      in Mkfunval a : elimSpaghetti (end ++ body)
+elimSpaghetti (x:xs) = x:elimSpaghetti xs
+elimSpaghetti [] = []
 
 codegen ast = evalState (codeV ast initialEnvironment 0) initialState <> Halt
 

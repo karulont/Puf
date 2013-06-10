@@ -48,7 +48,7 @@ data Instruction
      | Move Int Int
      | Label Int
      | Cat Instruction Instruction
-     deriving (Show)
+     deriving (Show,Eq)
 
 data VariableType = Local
                   | Global
