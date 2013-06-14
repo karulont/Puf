@@ -14,12 +14,6 @@ instListToList i = [i]
 pprint :: [InstList] -> String
 pprint = unlines.map printInstruction
 
-{-
-pprint :: InstList -> String
-pprint (Cat il1 il2) = pprint il1 ++ ('\n' : pprint il2)
-pprint i = printInstruction i
--}
-
 elimSpaghetti :: [InstList] -> [InstList]
 elimSpaghetti (Mkclos a:Jump b:rest)
     = let (body,(_:end)) = break (== Label b) rest
@@ -32,8 +26,8 @@ elimSpaghetti [] = []
 
 codegen ast = evalState (codeV ast initialEnvironment 0) initialState <> Halt
 
-getNextLabel = do (CompilerState e s l) <- get
-                  put (CompilerState e s (l+1))
+getNextLabel = do (CompilerState l) <- get
+                  put (CompilerState (l+1))
                   return l
 
 getvar :: String -> Environment -> Int -> Instruction

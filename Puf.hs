@@ -30,9 +30,9 @@ mainargs x = do { input <- prepare x (takeDirectory x)
                 ; putStrLn x
                 ; putStrLn ""
                 ; let ast = parsePuf input
-                ; putStrLn (ppAST ast)
-                ; putStrLn ""
                 ; putStrLn (show ast)
+                ; putStrLn ""
+                ; putStrLn (ppAST ast)
                 ; putStrLn ""
                 ; putStrLn "Compiling..."
                 ; let compiled = compileAST ast

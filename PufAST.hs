@@ -90,10 +90,16 @@ pprint (Rec decls a) = align (text "letrec" </> align (vsep (map prdecl decls))
 pprint (Tuple a) = align $ parens $ fillSep $ punctuate comma (map pprint a)
 pprint (Select i a) = text "#" <> int i <+> pprint a
 pprint Nil = text "[]"
-pprint (Cons a b) = align $ lbracket <> pprint a <> ppp b
-                               where ppp Nil = rbracket
-                                     ppp (Cons a b) = comma </> pprint a 
-                                                            <//> ppp b
+pprint cons@(Cons a b)
+    | endsWithNil b = align $ lbracket <> pprint a <> ppl b
+    | otherwise = parens $ ppc cons
+    where ppl Nil = rbracket
+          ppl (Cons a b) = comma </> pprint a <//> ppl b
+          ppc (Cons a b) = pprint a <> colon <> ppc b
+          ppc e = pprint e
+          endsWithNil Nil = True
+          endsWithNil (Cons _ b) = endsWithNil b
+          endsWithNil _ = False
 
 
 pprint (Case cond empt x y part) = hang 2 (text "case" <+> pprint cond <+> text "of"

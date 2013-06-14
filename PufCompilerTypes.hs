@@ -77,13 +77,10 @@ envUnion :: Environment -> Environment -> Environment
  -} 
 envUnion m1 m2 = Map.unionWith (\_ b -> b) m1 m2
 
-data CompilerState = CompilerState [(Char,Int)] Int Int
+data CompilerState = CompilerState Int
                      deriving (Show)
 
-initialState = CompilerState [] 0 0
-
-modSD :: Int -> CompilerState -> CompilerState
-modSD x (CompilerState e sd l) = CompilerState e (sd+x) l
+initialState = CompilerState 0
 
 infixr 6 <>
 
